@@ -4,6 +4,7 @@ This Kubernetes deployment contains a docker image that provides a Minecraft Ser
 ```
 cat <<EOF | kubectl apply -f -
 # 1. PersistentVolumeClaim (PVC)
+# Reserves the storage space for the Minecraft world data.
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -13,9 +14,13 @@ spec:
     - ReadWriteOnce
   resources:
     requests:
+      # You can adjust this size (e.g., 10Gi for a larger world)
       storage: 5Gi 
+
 ---
+
 # 2. Deployment
+# Defines the Pod that runs the Minecraft server container, including the EULA fix.
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -37,6 +42,9 @@ spec:
         image: itzg/minecraft-server:latest
         ports:
         - containerPort: 25565 
+        env:
+        - name: EULA
+          value: "TRUE"
         volumeMounts:
         - name: minecraft-data
           mountPath: /data 
@@ -44,8 +52,11 @@ spec:
       - name: minecraft-data
         persistentVolumeClaim:
           claimName: minecraft-pvc
+
 ---
+
 # 3. Service
+# Exposes the Deployment so players can connect to the server.
 apiVersion: v1
 kind: Service
 metadata:
