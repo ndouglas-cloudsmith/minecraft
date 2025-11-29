@@ -77,4 +77,6 @@ EOF
 Check to see that the service is running:
 ```
 kubectl get svc minecraft-service
+kubectl get pods -l app=minecraft
+kubectl port-forward svc/minecraft-service 25565:25565
 ```
