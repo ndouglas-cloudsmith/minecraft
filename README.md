@@ -85,115 +85,99 @@ kubectl port-forward svc/minecraft-service 25565:25565
 ## Doom on Kubernetes
 ```
 cat <<EOF | kubectl apply -f -
----
-# 1. Namespace
-apiVersion: v1
-kind: Namespace
-metadata:
-  name: doom
-
----
-# 2. Service Account
+# -------------------------------------------------------------------
+# 1. ServiceAccount for Kubedoom
+# -------------------------------------------------------------------
 apiVersion: v1
 kind: ServiceAccount
 metadata:
-  name: kubedoom-sa
-  namespace: doom
-
+  name: kubedoom
+  namespace: default
 ---
-# 3. ClusterRole (Grants Permission to Delete Pods Cluster-wide)
+# -------------------------------------------------------------------
+# 2. ClusterRole defining Kubedoom's permissions
+# -------------------------------------------------------------------
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
 metadata:
-  name: kubedoom-pod-deleter
+  name: kubedoom
 rules:
-- apiGroups: [""] # "" indicates the core API group
-  resources: ["pods"]
+# Permissions for Kubedoom to find, delete, and manage pods and nodes
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "nodes"]
   verbs: ["get", "list", "watch", "delete"]
 - apiGroups: [""]
   resources: ["namespaces"]
-  verbs: ["get", "list"] # Required for Kubedoom to list all namespaces
-
+  verbs: ["get", "list"]
 ---
-# 4. ClusterRoleBinding (Binds the ServiceAccount to the ClusterRole)
+# -------------------------------------------------------------------
+# 3. ClusterRoleBinding linking the ServiceAccount to the ClusterRole
+# -------------------------------------------------------------------
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRoleBinding
 metadata:
-  name: kubedoom-pod-deleter-binding
+  name: kubedoom
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubedoom
 subjects:
 - kind: ServiceAccount
-  name: kubedoom-sa
-  namespace: doom
-roleRef:
-  kind: ClusterRole
-  name: kubedoom-pod-deleter
-  apiGroup: rbac.authorization.k8s.io
-
+  name: kubedoom
+  namespace: default
 ---
-# 5. Deployment
-apiVersion: apps/v1
-kind: Deployment
+# -------------------------------------------------------------------
+# 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
+# NOTE: Security context on 'kubedoom' is relaxed to fix 'socket file' error.
+# -------------------------------------------------------------------
+apiVersion: v1
+kind: Pod
 metadata:
-  name: kubedoom-deployment
-  namespace: doom
+  name: kubedoom-with-novnc
   labels:
     app: kubedoom
 spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: kubedoom
-  template:
-    metadata:
-      labels:
-        app: kubedoom
-    spec:
-      serviceAccountName: kubedoom-sa # Use the ServiceAccount with the ClusterRole
-      containers:
-      - name: kubedoom
-        image: ghcr.io/storax/kubedoom:latest
-        imagePullPolicy: Always
-        
-        # Optionally, set NAMESPACE to a specific namespace if you want Kubedoom 
-        # to only target pods there. Leave this out for cluster-wide deletion.
-        # env:
-        # - name: NAMESPACE
-        #   value: "your-target-namespace" 
-        
-        ports:
-        - containerPort: 5900
-          name: vnc-port
-          
-        # Note: We are now relying on the ServiceAccount permissions (RBAC) 
-        # instead of mounting the host's kubeconfig, which is the standard K8s approach.
-        # This removes the need for the insecure 'hostPath' volume.
-
----
-# 6. Service (Exposes VNC)
-apiVersion: v1
-kind: Service
-metadata:
-  name: kubedoom-vnc-service
-  namespace: doom
-spec:
-  selector:
-    app: kubedoom
-  ports:
-    # Port 5901 is the port you'll connect to externally (VNC client)
-    # TargetPort 5900 is the port the container is listening on
-    - port: 5901
-      targetPort: 5900
-      protocol: TCP
+  serviceAccountName: kubedoom
+  
+  containers:
+  # --- Kubedoom Container (VNC Server) ---
+  - name: kubedoom
+    image: ghcr.io/storax/kubedoom:latest
+    imagePullPolicy: Always
+    ports:
+    - containerPort: 5900
       name: vnc-port
-  # NodePort allows external access; change to LoadBalancer if on a cloud provider
-  type: NodePort
+    securityContext:
+      # RELAXED SECURITY CONTEXT to allow Xvfb to create socket files
+      runAsNonRoot: false
+      runAsUser: 0
+      # We removed other restrictive settings (like seccompProfile) for simplicity
+      # in solving the current issue.
+
+  # --- noVNC Container (Web Proxy) ---
+  - name: novnc-proxy
+    image: theasp/novnc:latest
+    imagePullPolicy: Always
+    ports:
+    - containerPort: 8080
+      name: web-port 
+    env:
+    - name: VNC_HOST
+      value: "localhost"
+    - name: VNC_PORT
+      value: "5900"
+    - name: PORT
+      value: "8080"
 EOF
 ```
 
 ```
-kubectl get svc -n doom kubedoom-vnc-service
+kubectl get pod kubedoom-with-novnc -w
 ```
 
 ```
-kubectl port-forward service/kubedoom-vnc-service 8080:8080
+kubectl port-forward pod/kubedoom-with-novnc 8080:8080
 ```
+
+Password: ```idbehold``` <br/>
+URL: ```http://localhost:8080/vnc.html```
