@@ -197,7 +197,7 @@ alias kubectl="kubecolor"
 
 Create excess namespace names to reflect our monsters:
 ```
-kubectl create ns juliana, brooke, meghan, parul, nicky, corey, claire, nigel
+kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/namespaces.yaml
 ```
 
 ```
