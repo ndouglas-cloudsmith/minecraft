@@ -195,10 +195,22 @@ Read the logs better:
 alias kubectl="kubecolor"
 ```
 
+Create excess namespace names to reflect our monsters:
 ```
-kubectl logs -f kubedoom-with-novnc -c kubedoom
+kubectl create ns juliana, brooke, meghan, parul, nicky, corey, claire, nigel
 ```
 
 ```
-kubectl logs -f kubedoom-with-novnc -c novnc-proxy
+kubectl logs kubedoom-with-novnc -c kubedoom --follow | \
+awk '
+  /kill/ || /monster/ || /process/ {
+    # Bright Red for 'kill'
+    gsub("kill", "\033[1;31mkill\033[0m");
+    # Bright Yellow for 'monster'
+    gsub("monster", "\033[1;33mmonster\033[0m");
+    # Bright Blue for 'process'
+    gsub("process", "\033[1;34mprocess\033[0m");
+    print
+  }
+'
 ```
