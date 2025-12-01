@@ -172,11 +172,11 @@ EOF
 ```
 
 ```
-kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom.yaml
+kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom2.yaml
 ```
 
 ```
-kubectl delete -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom.yaml
+kubectl delete -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom2.yaml
 ```
 
 ```
