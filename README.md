@@ -118,7 +118,7 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: kubedoom-cr
-  apiGroup: rbac.authorization.io
+  apiGroup: rbac.authorization.k8s.io # <-- THIS IS THE CORRECT API GROUP
 ---
 apiVersion: apps/v1
 kind: Deployment
