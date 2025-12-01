@@ -21,7 +21,7 @@ rules:
   verbs: ["get", "list", "watch", "delete"]
 - apiGroups: [""]
   resources: ["namespaces"]
-  verbs: ["get", "list"]
+  verbs: ["get", "list", "delete"] # ⬅️ ADDED "delete" VERB HERE
 ---
 # -------------------------------------------------------------------
 # 3. ClusterRoleBinding linking the ServiceAccount to the ClusterRole
@@ -57,6 +57,8 @@ spec:
   - name: kubedoom
     image: ghcr.io/storax/kubedoom:latest
     imagePullPolicy: Always
+    command: ["/kubedoom"] # ⬅️ ADDED COMMAND ENTRYPOINT
+    args: ["-mode", "namespaces"] # ⬅️ ADDED ARGS TO SET NAMESPACES MODE
     ports:
     - containerPort: 5900
       name: vnc-port
