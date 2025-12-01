@@ -1,0 +1,87 @@
+# This manifest defines the necessary Kubernetes resources to run Kubedoom
+# in 'namespaces' mode, allowing the game to target and delete entire namespaces.
+
+# -------------------------------------------------------------------
+# 1. ServiceAccount for Kubedoom
+# -------------------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubedoom
+  namespace: default
+---
+# -------------------------------------------------------------------
+# 2. ClusterRole defining Kubedoom's permissions
+#    UPDATED: Added 'delete' verb for 'namespaces'.
+# -------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedoom
+rules:
+# Permissions for Kubedoom to find, delete, and manage pods and nodes
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "nodes"]
+  verbs: ["get", "list", "watch", "delete"]
+# Permissions for Kubedoom to target and delete namespaces
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "delete"] # <--- ADDED 'delete' verb
+---
+# -------------------------------------------------------------------
+# 3. ClusterRoleBinding linking the ServiceAccount to the ClusterRole
+# -------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubedoom
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubedoom
+subjects:
+- kind: ServiceAccount
+  name: kubedoom
+  namespace: default
+---
+# -------------------------------------------------------------------
+# 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
+#    UPDATED: Added the '-mode namespaces' argument to the Kubedoom container.
+# -------------------------------------------------------------------
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubedoom-with-novnc
+  labels:
+    app: kubedoom
+spec:
+  serviceAccountName: kubedoom
+
+  containers:
+  # --- Kubedoom Container (VNC Server) ---
+  - name: kubedoom
+    image: ghcr.io/storax/kubedoom:latest
+    imagePullPolicy: Always
+    args: ["-mode", "namespaces"] # <--- ADDED: Sets Kubedoom to target namespaces
+    ports:
+    - containerPort: 5900
+      name: vnc-port
+    securityContext:
+      # RELAXED SECURITY CONTEXT to allow Xvfb to create socket files
+      runAsNonRoot: false
+      runAsUser: 0
+
+  # --- noVNC Container (Web Proxy) ---
+  - name: novnc-proxy
+    image: theasp/novnc:latest
+    imagePullPolicy: Always
+    ports:
+    - containerPort: 8080
+      name: web-port
+    env:
+    - name: VNC_HOST
+      value: "localhost"
+    - name: VNC_PORT
+      value: "5900"
+    - name: PORT
+      value: "8080"
