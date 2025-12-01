@@ -9,6 +9,7 @@ metadata:
 ---
 # -------------------------------------------------------------------
 # 2. ClusterRole defining Kubedoom's permissions
+#    (UPDATED to include 'delete' for namespaces)
 # -------------------------------------------------------------------
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -21,7 +22,7 @@ rules:
   verbs: ["get", "list", "watch", "delete"]
 - apiGroups: [""]
   resources: ["namespaces"]
-  verbs: ["get", "list", "delete"] # ⬅️ ADDED "delete" VERB HERE
+  verbs: ["get", "list", "delete"] # ⬅️ Granting permission to delete namespaces
 ---
 # -------------------------------------------------------------------
 # 3. ClusterRoleBinding linking the ServiceAccount to the ClusterRole
@@ -41,7 +42,7 @@ subjects:
 ---
 # -------------------------------------------------------------------
 # 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
-# NOTE: Security context on 'kubedoom' is relaxed to fix 'socket file' error.
+#    (UPDATED to use 'args' only for the mode flag)
 # -------------------------------------------------------------------
 apiVersion: v1
 kind: Pod
@@ -57,8 +58,9 @@ spec:
   - name: kubedoom
     image: ghcr.io/storax/kubedoom:latest
     imagePullPolicy: Always
-    command: ["/kubedoom"] # ⬅️ ADDED COMMAND ENTRYPOINT
-    args: ["-mode", "namespaces"] # ⬅️ ADDED ARGS TO SET NAMESPACES MODE
+    # The 'command' field that caused the error has been REMOVED.
+    # We use 'args' to pass the flag to the image's default entrypoint.
+    args: ["-mode", "namespaces"] # ⬅️ Setting the namespace killing mode
     ports:
     - containerPort: 5900
       name: vnc-port
