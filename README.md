@@ -201,7 +201,7 @@ kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft
 ```
 
 ```
-kubectl logs kubedoom-with-novnc -c kubedoom --follow | \
+kubectl logs kubedoom-with-novnc --follow | \
 awk '
   /kill/ || /monster/ || /process/ {
     # Bright Red for 'kill'
