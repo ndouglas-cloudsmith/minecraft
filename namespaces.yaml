@@ -1,0 +1,39 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: juliana
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: brooke
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: meghan
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: parul
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nicky
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: corey
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: claire
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: nigel
