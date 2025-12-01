@@ -86,6 +86,7 @@ kubectl port-forward svc/minecraft-service 25565:25565
 ```
 cat <<EOF | kubectl apply -f -
 ---
+# 1. RBAC (Needed for Kubedoom to manage resources)
 apiVersion: v1
 kind: ServiceAccount
 metadata:
@@ -118,51 +119,67 @@ subjects:
 roleRef:
   kind: ClusterRole
   name: kubedoom-cr
-  apiGroup: rbac.authorization.k8s.io # <-- THIS IS THE CORRECT API GROUP
+  apiGroup: rbac.authorization.k8s.io # <-- CORRECTED API GROUP
 ---
+# 2. Deployment with Two Containers (The Sidecar Pattern)
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: kubedoom
+  name: kubedoom-novnc
   labels:
-    app: kubedoom
+    app: kubedoom-novnc
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: kubedoom
+      app: kubedoom-novnc
   template:
     metadata:
       labels:
-        app: kubedoom
+        app: kubedoom-novnc
     spec:
       serviceAccountName: kubedoom-sa
       containers:
+      # --- Container 1: Kubedoom (VNC Server) ---
       - name: kubedoom
         image: ghcr.io/storax/kubedoom:latest
         ports:
-        - containerPort: 5900 # The VNC port inside the container
+        - containerPort: 5900 # VNC Server port
           name: vnc-port
+
+      # --- Container 2: noVNC Proxy (Web Interface) ---
+      - name: novnc-proxy
+        image: thelamer/novnc:latest # A popular, simple noVNC image
+        # The noVNC container connects to Kubedoom's VNC server via localhost:5900
+        env:
+        - name: VNC_SERVER_HOST
+          value: "localhost"
+        - name: VNC_SERVER_PORT
+          value: "5900"
+        ports:
+        - containerPort: 8080 # noVNC's default HTTP port
+          name: http-port
 ---
+# 3. Service (Exposing the noVNC Web Port)
 apiVersion: v1
 kind: Service
 metadata:
-  name: kubedoom-vnc-clusterip
+  name: kubedoom-novnc-web
 spec:
   selector:
-    app: kubedoom
+    app: kubedoom-novnc
   ports:
   - protocol: TCP
-    port: 5900 # Service port (doesn't matter much for ClusterIP/port-forward)
-    targetPort: 5900 # **The actual VNC port**
-  type: ClusterIP # <-- This is the key change!
+    port: 8080 # Service port (your local port will map to this)
+    targetPort: 8080 # Container port (the noVNC HTTP port)
+  type: ClusterIP
 EOF
 ```
 
 ```
-kubectl port-forward service/kubedoom-vnc-clusterip 5901:5900
+kubectl get pods -l app=kubedoom-novnc
 ```
 
 ```
-vncviewer localhost:5901
+kubectl port-forward service/kubedoom-novnc-web 8080:8080
 ```
