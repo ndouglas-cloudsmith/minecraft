@@ -214,3 +214,20 @@ awk '
   }
 '
 ```
+
+Auto-generate enemies script:
+```
+wget https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/enemies.sh
+chmod +x enemies.sh
+```
+
+Run the script:
+```
+./enemies.sh
+```
+
+### Cleanup
+Finds all namespaces starting with 'meghan' and deletes them
+```
+kubectl get ns --no-headers | grep '^meghan[0-9]' | awk '{print $1}' | xargs -r kubectl delete ns
+```
