@@ -1,0 +1,83 @@
+# -------------------------------------------------------------------
+# 1. ServiceAccount for Kubedoom
+# -------------------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubedoom
+  namespace: default
+---
+# -------------------------------------------------------------------
+# 2. ClusterRole defining Kubedoom's permissions
+# -------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedoom
+rules:
+# Permissions for Kubedoom to find, delete, and manage pods and nodes
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "nodes"]
+  verbs: ["get", "list", "watch", "delete"]
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list"]
+---
+# -------------------------------------------------------------------
+# 3. ClusterRoleBinding linking the ServiceAccount to the ClusterRole
+# -------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubedoom
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubedoom
+subjects:
+- kind: ServiceAccount
+  name: kubedoom
+  namespace: default
+---
+# -------------------------------------------------------------------
+# 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
+# NOTE: Security context on 'kubedoom' is relaxed to fix 'socket file' error.
+# -------------------------------------------------------------------
+apiVersion: v1
+kind: Pod
+metadata:
+  name: kubedoom-with-novnc
+  labels:
+    app: kubedoom
+spec:
+  serviceAccountName: kubedoom
+  
+  containers:
+  # --- Kubedoom Container (VNC Server) ---
+  - name: kubedoom
+    image: ghcr.io/storax/kubedoom:latest
+    imagePullPolicy: Always
+    ports:
+    - containerPort: 5900
+      name: vnc-port
+    securityContext:
+      # RELAXED SECURITY CONTEXT to allow Xvfb to create socket files
+      runAsNonRoot: false
+      runAsUser: 0
+      # We removed other restrictive settings (like seccompProfile) for simplicity
+      # in solving the current issue.
+
+  # --- noVNC Container (Web Proxy) ---
+  - name: novnc-proxy
+    image: theasp/novnc:latest
+    imagePullPolicy: Always
+    ports:
+    - containerPort: 8080
+      name: web-port 
+    env:
+    - name: VNC_HOST
+      value: "localhost"
+    - name: VNC_PORT
+      value: "5900"
+    - name: PORT
+      value: "8080"
