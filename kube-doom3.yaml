@@ -46,7 +46,7 @@ subjects:
 ---
 # -------------------------------------------------------------------
 # 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
-#    UPDATED: Includes volume mounts for the custom WAD file.
+#    FIXED: Uses 'command' and 'args' to correctly load the WAD.
 # -------------------------------------------------------------------
 apiVersion: v1
 kind: Pod
@@ -62,19 +62,23 @@ spec:
   - name: kubedoom
     image: ghcr.io/storax/kubedoom:latest
     imagePullPolicy: Always
-    # UPDATED: Added the '-file' argument to load the custom WAD
+    
+    # FIX: Override the container's entrypoint to run a shell
+    command: ["/bin/bash", "-c"]
+    
+    # FIX: Pass the WAD file via DOOM_ARGS environment variable
     args: 
-      - "-file"
-      - "/doom-files/custom.wad"
-      - "-mode"
-      - "namespaces"
+      - |
+        export DOOM_ARGS="-file /doom-files/STARWAR1.WAD"; 
+        exec /usr/bin/kubedoom -mode namespaces
+    
     ports:
     - containerPort: 5900
       name: vnc-port
     securityContext:
       runAsNonRoot: false
       runAsUser: 0
-    # ADDED: Mount the volume where the WAD file will be located
+      
     volumeMounts: 
     - name: wad-volume
       mountPath: /doom-files 
@@ -94,7 +98,7 @@ spec:
     - name: PORT
       value: "8080"
   
-  # ADDED: Define the volume source as a ConfigMap
+  # Defines the volume source from the ConfigMap
   volumes: 
   - name: wad-volume
     configMap:
