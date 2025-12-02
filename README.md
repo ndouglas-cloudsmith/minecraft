@@ -231,3 +231,13 @@ Finds all namespaces starting with 'meghan' and deletes them
 ```
 kubectl get ns --no-headers | grep '^cve-[0-9]' | awk '{print $1}' | xargs -r kubectl delete ns
 ```
+
+### Messing around with WADs
+
+```
+kubectl create configmap kubedoom-sprites --from-file=STARWAR1.WAD
+```
+
+```
+kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom3.yaml
+```
