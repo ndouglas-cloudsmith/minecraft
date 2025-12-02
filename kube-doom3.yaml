@@ -46,7 +46,7 @@ subjects:
 ---
 # -------------------------------------------------------------------
 # 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
-#    FIXED: Uses '/usr/bin/psdoom' path to correctly launch the Doom engine.
+#    FINAL FIX: Uses a declarative 'env' block for DOOM_ARGS, preserving the default entrypoint.
 # -------------------------------------------------------------------
 apiVersion: v1
 kind: Pod
@@ -63,14 +63,15 @@ spec:
     image: ghcr.io/storax/kubedoom:latest
     imagePullPolicy: Always
     
-    # FIX: Override the container's entrypoint to run a shell
-    command: ["/bin/bash", "-c"]
+    # REMOVED: command and complex args (This failed due to missing psdoom path)
     
-    # FIX: Corrected the path to psdoom from /usr/games/psdoom to /usr/bin/psdoom
-    args: 
-      - |
-        /usr/bin/psdoom -iwad /usr/share/games/doom/doom1.wad -file /doom-files/STARWAR1.WAD &
-        exec /usr/bin/kubedoom -mode namespaces
+    # NEW FIX: Declaratively set the DOOM_ARGS environment variable
+    env:
+    - name: DOOM_ARGS
+      value: "-file /doom-files/STARWAR1.WAD" # The correct path and WAD name
+      
+    # Reverting to the original, working Kubedoom argument
+    args: ["-mode", "namespaces"]
     
     ports:
     - containerPort: 5900
