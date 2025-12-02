@@ -46,7 +46,7 @@ subjects:
 ---
 # -------------------------------------------------------------------
 # 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
-#    FIXED: Uses 'command' and 'args' to correctly load the WAD.
+#    FIXED: Directly launches psdoom with the WAD file, then runs Kubedoom monitor.
 # -------------------------------------------------------------------
 apiVersion: v1
 kind: Pod
@@ -66,10 +66,11 @@ spec:
     # FIX: Override the container's entrypoint to run a shell
     command: ["/bin/bash", "-c"]
     
-    # FIX: Pass the WAD file via DOOM_ARGS environment variable
+    # FIX: Directly launch the psdoom engine with the -file flag in the background (&),
+    # then start the kubedoom monitoring process.
     args: 
       - |
-        export DOOM_ARGS="-file /doom-files/STARWAR1.WAD"; 
+        /usr/games/psdoom -iwad /usr/share/games/doom/doom1.wad -file /doom-files/STARWAR1.WAD &
         exec /usr/bin/kubedoom -mode namespaces
     
     ports:
