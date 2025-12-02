@@ -1,3 +1,53 @@
+# This manifest defines the necessary Kubernetes resources to run Kubedoom
+# in 'namespaces' mode, allowing the game to target and delete entire namespaces,
+# and includes volume mounts for a custom WAD file.
+
+# -------------------------------------------------------------------
+# 1. ServiceAccount for Kubedoom
+# -------------------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubedoom
+  namespace: default
+---
+# -------------------------------------------------------------------
+# 2. ClusterRole defining Kubedoom's permissions
+# -------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedoom
+rules:
+# Permissions for Kubedoom to find, delete, and manage pods and nodes
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "nodes"]
+  verbs: ["get", "list", "watch", "delete"]
+# Permissions for Kubedoom to target and delete namespaces
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "delete"]
+---
+# -------------------------------------------------------------------
+# 3. ClusterRoleBinding linking the ServiceAccount to the ClusterRole
+# -------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubedoom
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubedoom
+subjects:
+- kind: ServiceAccount
+  name: kubedoom
+  namespace: default
+---
+# -------------------------------------------------------------------
+# 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
+#    UPDATED: Includes volume mounts for the custom WAD file.
+# -------------------------------------------------------------------
 apiVersion: v1
 kind: Pod
 metadata:
@@ -12,10 +62,10 @@ spec:
   - name: kubedoom
     image: ghcr.io/storax/kubedoom:latest
     imagePullPolicy: Always
-    # UPDATED: Added "-file /doom-files/custom.wad" to load sprites
+    # UPDATED: Added the '-file' argument to load the custom WAD
     args: 
       - "-file"
-      - "/doom-files/custom.wad" # <--- Loads the custom WAD from the mounted path
+      - "/doom-files/custom.wad"
       - "-mode"
       - "namespaces"
     ports:
@@ -24,7 +74,8 @@ spec:
     securityContext:
       runAsNonRoot: false
       runAsUser: 0
-    volumeMounts: # <--- Maps the volume to a path inside the container
+    # ADDED: Mount the volume where the WAD file will be located
+    volumeMounts: 
     - name: wad-volume
       mountPath: /doom-files 
 
@@ -43,7 +94,8 @@ spec:
     - name: PORT
       value: "8080"
   
-  volumes: # <--- Defines the source of the data (your ConfigMap)
+  # ADDED: Define the volume source as a ConfigMap
+  volumes: 
   - name: wad-volume
     configMap:
-      name: kubedoom-sprites # <--- **ASSUMES** you have created this ConfigMap
+      name: kubedoom-sprites
