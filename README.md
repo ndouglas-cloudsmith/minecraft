@@ -229,5 +229,5 @@ Run the script:
 ### Cleanup
 Finds all namespaces starting with 'meghan' and deletes them
 ```
-kubectl get ns --no-headers | grep '^meghan[0-9]' | awk '{print $1}' | xargs -r kubectl delete ns
+kubectl get ns --no-headers | grep '^cve-[0-9]' | awk '{print $1}' | xargs -r kubectl delete ns
 ```
