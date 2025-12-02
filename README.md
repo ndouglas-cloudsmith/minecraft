@@ -187,7 +187,7 @@ kubectl get pod kubedoom-with-novnc -w
 kubectl port-forward pod/kubedoom-with-novnc 8080:8080
 ```
 
-**URL:** http://localhost:8080/vnc.html <br/>
+**URL:** <a href="http://localhost:8080/vnc.html" target="_blank">http://localhost:8080/vnc.html</a> <br/>
 **Password:** ```idbehold```
 
 Read the logs better:
