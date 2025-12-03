@@ -1,6 +1,5 @@
 # This manifest defines the necessary Kubernetes resources to run Kubedoom
-# in 'namespaces' mode, allowing the game to target and delete entire namespaces,
-# and includes volume mounts for a custom WAD file.
+# in 'namespaces' mode, allowing the game to target and delete entire namespaces.
 
 # -------------------------------------------------------------------
 # 1. ServiceAccount for Kubedoom
@@ -13,6 +12,7 @@ metadata:
 ---
 # -------------------------------------------------------------------
 # 2. ClusterRole defining Kubedoom's permissions
+#    UPDATED: Added 'delete' verb for 'namespaces'.
 # -------------------------------------------------------------------
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
@@ -26,7 +26,7 @@ rules:
 # Permissions for Kubedoom to target and delete namespaces
 - apiGroups: [""]
   resources: ["namespaces"]
-  verbs: ["get", "list", "delete"]
+  verbs: ["get", "list", "delete"] # <--- ADDED 'delete' verb
 ---
 # -------------------------------------------------------------------
 # 3. ClusterRoleBinding linking the ServiceAccount to the ClusterRole
@@ -45,61 +45,54 @@ subjects:
   namespace: default
 ---
 # -------------------------------------------------------------------
-# 4. Multi-Container Pod Definition (Kubedoom + noVNC Proxy)
-#    DEFINITIVE FIX: Using confirmed path /usr/local/games/psdoom.
+# 4. Multi-Container Deployment Definition (REPLACED POD WITH DEPLOYMENT)
 # -------------------------------------------------------------------
-apiVersion: v1
-kind: Pod
+apiVersion: apps/v1  # Deployment uses apps/v1
+kind: Deployment     # Changed from Pod to Deployment
 metadata:
-  name: kubedoom-with-novnc
+  name: kubedoom-deployment # Renamed the resource for clarity
   labels:
     app: kubedoom
 spec:
-  serviceAccountName: kubedoom
-
-  containers:
-  # --- Kubedoom Container (VNC Server) ---
-  - name: kubedoom
-    image: docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
-    imagePullPolicy: Always
-    
-    # FIX: Override entrypoint to allow shell execution
-    command: ["/bin/bash", "-c"]
-    
-    # DEFINITIVE FIX: Use the correct absolute path for psdoom
-    args: 
-      - |
-        /usr/local/games/psdoom -iwad /usr/share/games/doom/doom1.wad -file /doom-files/STARWAR1.WAD &
-        exec /usr/bin/kubedoom -mode namespaces
-    
-    ports:
-    - containerPort: 5900
-      name: vnc-port
-    securityContext:
-      runAsNonRoot: false
-      runAsUser: 0
+  # The Deployment must define the desired state
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubedoom
       
-    volumeMounts: 
-    - name: wad-volume
-      mountPath: /doom-files 
+  # The old Pod metadata/spec is now nested under the 'template' key
+  template:
+    metadata:
+      labels:
+        app: kubedoom
+    spec:
+      serviceAccountName: kubedoom
 
-  # --- noVNC Container (Web Proxy) ---
-  - name: novnc-proxy
-    image: docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
-    imagePullPolicy: Always
-    ports:
-    - containerPort: 8080
-      name: web-port
-    env:
-    - name: VNC_HOST
-      value: "localhost"
-    - name: VNC_PORT
-      value: "5900"
-    - name: PORT
-      value: "8080"
-  
-  # Defines the volume source from the ConfigMap
-  volumes: 
-  - name: wad-volume
-    configMap:
-      name: kubedoom-sprites
+      containers:
+      # --- Kubedoom Container (VNC Server) ---
+      - name: kubedoom
+        image: docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+        imagePullPolicy: Always
+        args: ["-mode", "namespaces"]
+        ports:
+        - containerPort: 5900
+          name: vnc-port
+        securityContext:
+          # RELAXED SECURITY CONTEXT
+          runAsNonRoot: false
+          runAsUser: 0
+
+      # --- noVNC Container (Web Proxy) ---
+      - name: novnc-proxy
+        image: docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: web-port
+        env:
+        - name: VNC_HOST
+          value: "localhost"
+        - name: VNC_PORT
+          value: "5900"
+        - name: PORT
+          value: "8080"
