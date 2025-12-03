@@ -232,49 +232,6 @@ Finds all namespaces starting with 'meghan' and deletes them
 kubectl get ns --no-headers | grep '^cve-[0-9]' | awk '{print $1}' | xargs -r kubectl delete ns
 ```
 
-### Messing around with WADs
-
-```
-kubectl create configmap kubedoom-sprites --from-file=STARWAR1.WAD
-```
-
-### Pushing packages to Cloudsmith
-
-```
-docker pull ghcr.io/storax/kubedoom:latest
-docker login docker.cloudsmith.io -u "$USERNAME" -p "$CLOUDSMITH_API_KEY"
-docker tag ghcr.io/storax/kubedoom:latest docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
-docker push docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
-```
-
-```
-docker pull theasp/novnc:latest
-docker login docker.cloudsmith.io -u "$USERNAME" -p "$CLOUDSMITH_API_KEY"
-docker tag theasp/novnc:latest docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
-docker push docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
-```
-
-Changed from ```pod``` to ```deployment``` in this version:
-```
-kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom3.yaml
-```
-
-As a result, we need to ```port-forward``` from the deployment:
-```
-kubectl port-forward deployment/kubedoom-deployment 8080:8080
-```
-
-Check the two Cloudsmith images associated with your running pod:
-```
-kubectl get pods -o custom-columns=POD_NAME:.metadata.name,IMAGE:".spec.containers[*].image"
-```
-
-```
-docker pull docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
-docker run -it docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest /bin/bash
-docker inspect docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
-```
-
 ### Interacting with the local container
 
 ```
@@ -303,3 +260,51 @@ kubectl exec -it kubedoom-with-novnc -c kubedoom -- ls -lh /root/doom1.wad
 ```
 
 ``` -rw-rw-r-- 1 502 staff 282K Dec  3 12:46 /root/doom1.wad ```
+
+<br/><br/>
+
+### Pushing packages to Cloudsmith
+
+```
+docker pull ghcr.io/storax/kubedoom:latest
+docker login docker.cloudsmith.io -u "$USERNAME" -p "$CLOUDSMITH_API_KEY"
+docker tag ghcr.io/storax/kubedoom:latest docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+docker push docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+```
+
+```
+docker pull theasp/novnc:latest
+docker login docker.cloudsmith.io -u "$USERNAME" -p "$CLOUDSMITH_API_KEY"
+docker tag theasp/novnc:latest docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
+docker push docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
+```
+
+```
+docker pull docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+docker run -it docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest /bin/bash
+docker inspect docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+```
+
+<br/><br/>
+
+### Making changes to Doom in Production
+
+Changed from ```pod``` to ```deployment``` in this version:
+```
+kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom3.yaml
+```
+
+As a result, we need to ```port-forward``` from the deployment:
+```
+kubectl port-forward deployment/kubedoom-deployment 8080:8080
+```
+
+Check the two Cloudsmith images associated with your running pod:
+```
+kubectl get pods -o custom-columns=POD_NAME:.metadata.name,IMAGE:".spec.containers[*].image"
+```
+
+```
+ls | grep .WAD
+kubectl cp ./STARWAR1.WAD default/"$(kubectl get pods -l app=kubedoom -o jsonpath='{.items[0].metadata.name}')":/root/doom1.wad -c kubedoom
+```
