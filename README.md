@@ -316,5 +316,6 @@ kubectl cp "$FULL_WAD_PATH" default/"$(kubectl get pods -l app=kubedoom -o jsonp
 
 ```
 kubectl exec -it deployment/kubedoom-deployment -c kubedoom -- /bin/bash
-ls -lh /root/doom1.wad
+find / -name "*.wad"
+cd /root/.psdoom/savegames
 ```
