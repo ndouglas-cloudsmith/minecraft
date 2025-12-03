@@ -250,6 +250,22 @@ kubectl exec -it kubedoom-deployment-78674c9f56-tdc72 -c kubedoom -- rm -r /root
 kubectl exec -it kubedoom-deployment-78674c9f56-tdc72 -c kubedoom -- find / -name "*.wad"
 ```
 
+```
+cd /usr/share/sounds/sf2/
+find / -type f -size +500k 2>/dev/null
+```
+
+```
+cd ..
+cd /usr/share
+```
+
+```
+which kubedoom
+cd /usr/bin/kubedoom
+ls
+ls -l
+```
 
 
 **URL:** <a href="http://localhost:8080/vnc.html" target="_blank">localhost on port 8000</a> <br/>
