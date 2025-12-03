@@ -85,7 +85,7 @@ spec:
 
   # --- noVNC Container (Web Proxy) ---
   - name: novnc-proxy
-    image: theasp/novnc:latest
+    image: docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
     imagePullPolicy: Always
     ports:
     - containerPort: 8080
