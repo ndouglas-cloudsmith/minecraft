@@ -268,3 +268,20 @@ docker pull docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
 docker run -it docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest /bin/bash
 docker inspect docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
 ```
+
+### Interacting with the local container
+
+```
+docker run -it --platform linux/amd64 --entrypoint /bin/bash docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+```
+
+Use this command to recursively list everything starting from the root of the container file system:
+```
+find / -print
+```
+
+This will print every single file and folder path inside the container. <br/>
+Since the output will be enormous, you should pipe it to a command that lets you read it one page at a time:
+```
+find / -name "*.wad"
+```
