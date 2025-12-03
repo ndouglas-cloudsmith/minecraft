@@ -254,8 +254,14 @@ docker tag theasp/novnc:latest docker.cloudsmith.io/acme-corporation/acme-repo-o
 docker push docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
 ```
 
+Changed from ```pod``` to ```deployment``` in this version:
 ```
 kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom3.yaml
+```
+
+As a result, we need to ```port-forward``` from the deployment:
+```
+kubectl port-forward deployment/kubedoom-deployment 8080:8080
 ```
 
 Check the two Cloudsmith images associated with your running pod:
