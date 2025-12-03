@@ -322,3 +322,8 @@ Find the ```wad``` directory
 find / -name "*.wad"
 cd /root/.psdoom/savegames/doom.wad
 ```
+
+```
+kubectl get pods
+kubectl exec -it kubedoom-deployment-78674c9f56-tdc72 -c kubedoom -- ls -la
+```
