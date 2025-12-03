@@ -60,7 +60,7 @@ spec:
   containers:
   # --- Kubedoom Container (VNC Server) ---
   - name: kubedoom
-    image: ghcr.io/storax/kubedoom:latest
+    image: docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
     imagePullPolicy: Always
     
     # FIX: Override entrypoint to allow shell execution
