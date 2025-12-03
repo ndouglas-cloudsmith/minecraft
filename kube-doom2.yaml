@@ -60,7 +60,7 @@ spec:
   containers:
   # --- Kubedoom Container (VNC Server) ---
   - name: kubedoom
-    image: ghcr.io/storax/kubedoom:latest
+    image: docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
     imagePullPolicy: Always
     args: ["-mode", "namespaces"] # <--- ADDED: Sets Kubedoom to target namespaces
     ports:
@@ -73,7 +73,7 @@ spec:
 
   # --- noVNC Container (Web Proxy) ---
   - name: novnc-proxy
-    image: theasp/novnc:latest
+    image: docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
     imagePullPolicy: Always
     ports:
     - containerPort: 8080
