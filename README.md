@@ -238,10 +238,6 @@ kubectl get ns --no-headers | grep '^cve-[0-9]' | awk '{print $1}' | xargs -r ku
 kubectl create configmap kubedoom-sprites --from-file=STARWAR1.WAD
 ```
 
-```
-kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom3.yaml
-```
-
 ### Pushing packages to Cloudsmith
 
 ```
@@ -256,4 +252,13 @@ docker pull theasp/novnc:latest
 docker login docker.cloudsmith.io -u "$USERNAME" -p "$CLOUDSMITH_API_KEY"
 docker tag theasp/novnc:latest docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
 docker push docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
+```
+
+```
+kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom3.yaml
+```
+
+Check the two Cloudsmith images associated with your running pod:
+```
+kubectl get pods -o custom-columns=POD_NAME:.metadata.name,IMAGE:".spec.containers[*].image"
 ```
