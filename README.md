@@ -285,3 +285,15 @@ Since the output will be enormous, you should pipe it to a command that lets you
 ```
 find / -name "*.wad"
 ```
+
+Assuming you have an alternative .wad file on your /Desktop directory locally, we can move this into our running pod:
+```
+kubectl cp ./STARWAR1.WAD default/kubedoom-with-novnc:/root/doom1.wad -c kubedoom
+```
+
+From outside the pod, you can see that there is a pre-existing .wad file:
+```
+kubectl exec -it kubedoom-with-novnc -c kubedoom -- ls -lh /root/doom1.wad
+```
+
+``` -rw-rw-r-- 1 502 staff 282K Dec  3 12:46 /root/doom1.wad ```
