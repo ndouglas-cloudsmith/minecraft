@@ -262,3 +262,8 @@ Check the two Cloudsmith images associated with your running pod:
 ```
 kubectl get pods -o custom-columns=POD_NAME:.metadata.name,IMAGE:".spec.containers[*].image"
 ```
+
+```
+docker pull docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+docker run -it docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest /bin/bash
+```
