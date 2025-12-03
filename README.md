@@ -304,17 +304,17 @@ Check the two Cloudsmith images associated with your running pod:
 kubectl get pods -o custom-columns=POD_NAME:.metadata.name,IMAGE:".spec.containers[*].image"
 ```
 
-```
-ls | grep .WAD
-kubectl cp ./STARWAR1.WAD default/"$(kubectl get pods -l app=kubedoom -o jsonpath='{.items[0].metadata.name}')":/root/doom1.wad -c kubedoom
-```
-
 Define the correct raw URL
 ```
 RAW_WAD_URL="https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/main/doom1.wad"
 ```
 
-Execute the download inside the container, saving it directly as doom1.wad
+Execute the download inside the container, saving it directly as ```doom1.wad```
 ```
-kubectl exec -it "$(kubectl get pods -l app=kubedoom -o jsonpath='{.items[0].metadata.name}')" -c kubedoom -- wget -O /root/doom1.wad "$RAW_WAD_URL"
+kubectl cp "$FULL_WAD_PATH" default/"$(kubectl get pods -l app=kubedoom -o jsonpath='{.items[0].metadata.name}')":/root/doom1.wad -c kubedoom
+```
+
+```
+kubectl exec -it deployment/kubedoom-deployment -c kubedoom -- /bin/bash
+ls -lh /root/doom1.wad
 ```
