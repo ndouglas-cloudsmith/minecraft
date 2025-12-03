@@ -308,3 +308,13 @@ kubectl get pods -o custom-columns=POD_NAME:.metadata.name,IMAGE:".spec.containe
 ls | grep .WAD
 kubectl cp ./STARWAR1.WAD default/"$(kubectl get pods -l app=kubedoom -o jsonpath='{.items[0].metadata.name}')":/root/doom1.wad -c kubedoom
 ```
+
+Define the correct raw URL
+```
+RAW_WAD_URL="https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/main/doom1.wad"
+```
+
+Execute the download inside the container, saving it directly as doom1.wad
+```
+kubectl exec -it "$(kubectl get pods -l app=kubedoom -o jsonpath='{.items[0].metadata.name}')" -c kubedoom -- wget -O /root/doom1.wad "$RAW_WAD_URL"
+```
