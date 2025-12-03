@@ -241,3 +241,19 @@ kubectl create configmap kubedoom-sprites --from-file=STARWAR1.WAD
 ```
 kubectl apply -f https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/refs/heads/main/kube-doom3.yaml
 ```
+
+### Pushing packages to Cloudsmith
+
+```
+docker pull ghcr.io/storax/kubedoom:latest
+docker login docker.cloudsmith.io -u "$USERNAME" -p "$CLOUDSMITH_API_KEY"
+docker tag ghcr.io/storax/kubedoom:latest docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+docker push docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+```
+
+```
+docker pull theasp/novnc:latest
+docker login docker.cloudsmith.io -u "$USERNAME" -p "$CLOUDSMITH_API_KEY"
+docker tag theasp/novnc:latest docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
+docker push docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
+```
