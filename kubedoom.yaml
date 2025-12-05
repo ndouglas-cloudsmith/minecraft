@@ -1,0 +1,138 @@
+# -------------------------------------------------------------------
+# 1. ServiceAccount for Kubedoom
+# -------------------------------------------------------------------
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: kubedoom
+  namespace: default
+---
+# -------------------------------------------------------------------
+# 2. ClusterRole defining Kubedoom's permissions
+# -------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: kubedoom
+rules:
+# Permissions for Kubedoom to find, delete, and manage pods and nodes
+- apiGroups: [""]
+  resources: ["pods", "pods/exec", "nodes"]
+  verbs: ["get", "list", "watch", "delete"]
+# Permissions for Kubedoom to target and delete namespaces
+- apiGroups: [""]
+  resources: ["namespaces"]
+  verbs: ["get", "list", "delete"]
+---
+# -------------------------------------------------------------------
+# 3. ClusterRoleBinding linking the ServiceAccount to the ClusterRole
+# -------------------------------------------------------------------
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: kubedoom
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: kubedoom
+subjects:
+- kind: ServiceAccount
+  name: kubedoom
+  namespace: default
+---
+# -------------------------------------------------------------------
+# 4. Multi-Container Deployment Definition
+# -------------------------------------------------------------------
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kubedoom-deployment
+  labels:
+    app: kubedoom
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: kubedoom
+  template:
+    metadata:
+      labels:
+        app: kubedoom
+    spec:
+      serviceAccountName: kubedoom
+
+      # --- INIT CONTAINER: Downloads the custom .wad file ---
+      initContainers:
+      - name: download-wad-file
+        image: busybox:1.36
+        command: ["wget"]
+        args:
+          - "-O"
+          - "/wad-data/doom2.wad"
+          - "https://raw.githubusercontent.com/ndouglas-cloudsmith/minecraft/main/doom2.wad"
+        volumeMounts:
+          - name: wad-volume
+            mountPath: /wad-data
+
+      # --- Main Containers ---
+      containers:
+      # --- Kubedoom Container (VNC Server) ---
+      - name: kubedoom
+        image: docker.cloudsmith.io/acme-corporation/acme-repo-one/kubedoom:latest
+        imagePullPolicy: Always
+        args: ["-mode", "namespaces"]
+        ports:
+        - containerPort: 5900
+          name: vnc-port
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0
+        volumeMounts:
+          - name: wad-volume
+            subPath: doom2.wad
+            mountPath: /doom2.wad
+
+      # --- noVNC Container (Web Proxy) ---
+      - name: novnc-proxy
+        image: docker.cloudsmith.io/acme-corporation/acme-repo-one/novnc:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: web-port
+        env:
+        # VNC_HOST is correct as 'localhost' for inter-container communication
+        - name: VNC_HOST
+          value: "localhost" 
+        - name: VNC_PORT
+          value: "5900"
+        - name: PORT
+          value: "8080"
+
+      # --- VOLUME DEFINITION ---
+      volumes:
+        - name: wad-volume
+          emptyDir: {}
+---
+# -------------------------------------------------------------------
+# 5. Service to Expose the noVNC Web Proxy (NEW REQUIRED RESOURCE)
+#    This resource exposes the application via port 8080 using NodePort.
+# -------------------------------------------------------------------
+apiVersion: v1
+kind: Service
+metadata:
+  name: kubedoom-novnc-service
+spec:
+  # The selector MUST match the labels on your Deployment's Pod template
+  selector:
+    app: kubedoom
+  # Use NodePort to expose the service to the outside world, 
+  # which is how platforms like Instruqt provide external URLs.
+  type: NodePort 
+  ports:
+    # 'port' is the cluster-internal service port (8080)
+    # 'targetPort' is the port on the container itself ('web-port', which is 8080)
+    # 'nodePort' is optional, Kubernetes will pick one in 30000-32767 range if omitted
+  - protocol: TCP
+    port: 8080
+    targetPort: web-port
+    name: http-access
